@@ -21,12 +21,29 @@ An interactive web application built with Python Flask that displays US military
   - Purple: Space Force
   - Orange: Joint Bases
 
+## Offline Versions Available!
+
+This project includes **TWO standalone HTML files** that work offline on any device:
+
+1. **`military_bases_offline.html`** (Semi-Offline)
+   - Uses OpenStreetMap tiles (needs internet for map background)
+   - All base data and interactivity works offline
+   - Best visual quality
+
+2. **`military_bases_100percent_offline.html`** (100% Offline)
+   - Custom canvas-based map - NO internet required
+   - Works in airplane mode, remote areas, etc.
+   - Fully interactive with pan, zoom, and search
+
+**How to use:** Simply open either HTML file in any web browser on any device (phone, tablet, laptop, etc.). See [OFFLINE_GUIDE.md](OFFLINE_GUIDE.md) for detailed instructions.
+
 ## Technology Stack
 
 - **Backend**: Python Flask
 - **Mapping**: Folium & Leaflet.js
 - **Geospatial**: GeoPy for distance calculations
 - **Frontend**: HTML5, CSS3, JavaScript
+- **Offline**: Canvas-based rendering for 100% offline support
 
 ## Installation
 

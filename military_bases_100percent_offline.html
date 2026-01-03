@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>US Military Bases Map - 100% Offline</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            z-index: 1000;
+        }
+
+        header h1 {
+            color: #2c3e50;
+            font-size: 1.5rem;
+            margin-bottom: 5px;
+        }
+
+        header p {
+            color: #7f8c8d;
+            font-size: 0.85rem;
+        }
+
+        .offline-badge {
+            display: inline-block;
+            background: #28a745;
+            color: white;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            margin-left: 10px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            padding: 15px;
+            gap: 15px;
+            overflow: hidden;
+        }
+
+        .sidebar {
+            width: 320px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 10px;
+            padding: 15px;
+            overflow-y: auto;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .panel {
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e1e8ed;
+        }
+
+        .panel:last-child {
+            border-bottom: none;
+        }
+
+        .panel h2 {
+            font-size: 1.1rem;
+            color: #2c3e50;
+            margin-bottom: 12px;
+        }
+
+        .stats {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stats-number {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stats-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e1e8ed;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+        }
+
+        .search-box:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .base-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .base-item {
+            padding: 10px;
+            margin-bottom: 8px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-left: 4px solid;
+        }
+
+        .base-item:hover {
+            background: #e9ecef;
+            transform: translateX(5px);
+        }
+
+        .base-item.army { border-left-color: #28a745; }
+        .base-item.navy { border-left-color: #007bff; }
+        .base-item.air-force { border-left-color: #17a2b8; }
+        .base-item.marine-corps { border-left-color: #dc3545; }
+        .base-item.space-force { border-left-color: #6f42c1; }
+        .base-item.joint { border-left-color: #fd7e14; }
+
+        .base-name {
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 0.9rem;
+        }
+
+        .base-branch {
+            font-size: 0.8rem;
+            color: #6c757d;
+            margin-top: 3px;
+        }
+
+        .legend {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 8px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 6px;
+            font-size: 0.85rem;
+        }
+
+        .marker-icon {
+            font-size: 1.2rem;
+            margin-right: 8px;
+            width: 18px;
+        }
+
+        .map-container {
+            flex: 1;
+            position: relative;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        #mapCanvas {
+            width: 100%;
+            height: 100%;
+            cursor: grab;
+        }
+
+        #mapCanvas:active {
+            cursor: grabbing;
+        }
+
+        .controls {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .control-btn {
+            background: white;
+            border: 2px solid #ddd;
+            width: 36px;
+            height: 36px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .control-btn:hover {
+            background: #f8f9fa;
+            border-color: #667eea;
+        }
+
+        .info-box {
+            background: white;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 10px;
+            border: 2px solid #667eea;
+        }
+
+        .info-box h3 {
+            color: #2c3e50;
+            font-size: 1rem;
+            margin-bottom: 8px;
+        }
+
+        .info-box p {
+            font-size: 0.85rem;
+            color: #495057;
+            margin-bottom: 5px;
+        }
+
+        footer {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 10px 20px;
+            text-align: center;
+            font-size: 0.75rem;
+            color: #7f8c8d;
+        }
+
+        @media (max-width: 968px) {
+            .main-content {
+                flex-direction: column;
+            }
+            .sidebar {
+                width: 100%;
+                max-height: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🗺️ US Military Bases Map <span class="offline-badge">100% OFFLINE</span></h1>
+            <p>Works completely offline - No internet required!</p>
+        </header>
+
+        <div class="main-content">
+            <div class="sidebar">
+                <div class="stats">
+                    <div class="stats-number" id="baseCount">25</div>
+                    <div class="stats-label">Military Installations</div>
+                </div>
+
+                <div class="panel">
+                    <h2>🔍 Search Bases</h2>
+                    <input type="text" class="search-box" id="searchBox" placeholder="Search by name, state, or branch...">
+                </div>
+
+                <div class="panel">
+                    <h2>📍 Military Bases</h2>
+                    <div class="base-list" id="baseList"></div>
+                </div>
+
+                <div class="panel legend">
+                    <h2>🏷️ Legend</h2>
+                    <div class="legend-item">
+                        <span class="marker-icon" style="color: #28a745;">●</span> Army
+                    </div>
+                    <div class="legend-item">
+                        <span class="marker-icon" style="color: #007bff;">●</span> Navy
+                    </div>
+                    <div class="legend-item">
+                        <span class="marker-icon" style="color: #17a2b8;">●</span> Air Force
+                    </div>
+                    <div class="legend-item">
+                        <span class="marker-icon" style="color: #dc3545;">●</span> Marine Corps
+                    </div>
+                    <div class="legend-item">
+                        <span class="marker-icon" style="color: #6f42c1;">●</span> Space Force
+                    </div>
+                    <div class="legend-item">
+                        <span class="marker-icon" style="color: #fd7e14;">●</span> Joint
+                    </div>
+                </div>
+
+                <div id="selectedInfo"></div>
+            </div>
+
+            <div class="map-container">
+                <canvas id="mapCanvas"></canvas>
+                <div class="controls">
+                    <button class="control-btn" onclick="zoomIn()" title="Zoom In">+</button>
+                    <button class="control-btn" onclick="zoomOut()" title="Zoom Out">−</button>
+                    <button class="control-btn" onclick="resetView()" title="Reset View">⌂</button>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p>100% Offline Map - No internet required! Drag to pan, scroll to zoom. Save this file (Ctrl/Cmd+S) and open anywhere.</p>
+        </footer>
+    </div>
+
+    <script>
+        // Military Bases Data
+        const militaryBases = [
+            {"name": "Fort Liberty (formerly Fort Bragg)", "branch": "Army", "lat": 35.1390, "lon": -79.0060, "state": "North Carolina", "description": "Home to the U.S. Army Special Operations Command and the 82nd Airborne Division"},
+            {"name": "Naval Station Norfolk", "branch": "Navy", "lat": 36.9466, "lon": -76.3297, "state": "Virginia", "description": "The world's largest naval station, supporting 75 ships and 134 aircraft"},
+            {"name": "Joint Base Lewis-McChord", "branch": "Joint", "lat": 47.1073, "lon": -122.5810, "state": "Washington", "description": "Major joint Army-Air Force base in the Pacific Northwest"},
+            {"name": "Fort Campbell", "branch": "Army", "lat": 36.6658, "lon": -87.4886, "state": "Kentucky/Tennessee", "description": "Home of the 101st Airborne Division (Air Assault)"},
+            {"name": "Eglin Air Force Base", "branch": "Air Force", "lat": 30.4833, "lon": -86.5250, "state": "Florida", "description": "Major Air Force testing and training range"},
+            {"name": "Marine Corps Base Camp Pendleton", "branch": "Marine Corps", "lat": 33.3023, "lon": -117.3150, "state": "California", "description": "Major West Coast Marine Corps training base"},
+            {"name": "Fort Hood (Fort Cavazos)", "branch": "Army", "lat": 31.1350, "lon": -97.7759, "state": "Texas", "description": "One of the largest active duty armored post in the U.S."},
+            {"name": "Nellis Air Force Base", "branch": "Air Force", "lat": 36.2361, "lon": -115.0344, "state": "Nevada", "description": "Home to air combat training and the Thunderbirds"},
+            {"name": "Naval Air Station Pensacola", "branch": "Navy", "lat": 30.3500, "lon": -87.3086, "state": "Florida", "description": "Primary naval aviation training base, home of Blue Angels"},
+            {"name": "Wright-Patterson Air Force Base", "branch": "Air Force", "lat": 39.8138, "lon": -84.0529, "state": "Ohio", "description": "Major Air Force research and development center"},
+            {"name": "Fort Benning (Fort Moore)", "branch": "Army", "lat": 32.3520, "lon": -84.9464, "state": "Georgia", "description": "U.S. Army Maneuver Center of Excellence and Infantry School"},
+            {"name": "Naval Base San Diego", "branch": "Navy", "lat": 32.6781, "lon": -117.1383, "state": "California", "description": "Principal homeport of the Pacific Fleet"},
+            {"name": "Scott Air Force Base", "branch": "Air Force", "lat": 38.5442, "lon": -89.8519, "state": "Illinois", "description": "Home of Air Mobility Command headquarters"},
+            {"name": "Naval Base Kitsap", "branch": "Navy", "lat": 47.5606, "lon": -122.6528, "state": "Washington", "description": "Strategic submarine base and naval shipyard"},
+            {"name": "Offutt Air Force Base", "branch": "Air Force", "lat": 41.1183, "lon": -95.9147, "state": "Nebraska", "description": "Home of U.S. Strategic Command"},
+            {"name": "Fort Carson", "branch": "Army", "lat": 38.7392, "lon": -104.7850, "state": "Colorado", "description": "Major Army installation supporting the 4th Infantry Division"},
+            {"name": "Naval Station Great Lakes", "branch": "Navy", "lat": 42.3117, "lon": -87.8464, "state": "Illinois", "description": "U.S. Navy's largest training installation"},
+            {"name": "Marine Corps Air Station Miramar", "branch": "Marine Corps", "lat": 32.8683, "lon": -117.1428, "state": "California", "description": "Former home of Top Gun, major Marine Corps air station"},
+            {"name": "Joint Base Andrews", "branch": "Joint", "lat": 38.8108, "lon": -76.8670, "state": "Maryland", "description": "Home of Air Force One"},
+            {"name": "Fort Bliss", "branch": "Army", "lat": 31.8093, "lon": -106.4005, "state": "Texas", "description": "Major Army air defense training center"},
+            {"name": "Naval Air Station Jacksonville", "branch": "Navy", "lat": 30.2358, "lon": -81.6805, "state": "Florida", "description": "Major naval aviation installation on the East Coast"},
+            {"name": "Peterson Space Force Base", "branch": "Space Force", "lat": 38.8125, "lon": -104.7008, "state": "Colorado", "description": "Home of U.S. Space Command and NORAD"},
+            {"name": "Lackland Air Force Base", "branch": "Air Force", "lat": 29.3847, "lon": -98.5811, "state": "Texas", "description": "Primary Air Force basic training center"},
+            {"name": "Naval Submarine Base New London", "branch": "Navy", "lat": 41.3870, "lon": -72.0830, "state": "Connecticut", "description": "Primary East Coast submarine base"},
+            {"name": "Barksdale Air Force Base", "branch": "Air Force", "lat": 32.5019, "lon": -93.6628, "state": "Louisiana", "description": "Major bomber base, home to B-52 squadrons"}
+        ];
+
+        const branchColors = {
+            'Army': '#28a745',
+            'Navy': '#007bff',
+            'Air Force': '#17a2b8',
+            'Marine Corps': '#dc3545',
+            'Space Force': '#6f42c1',
+            'Joint': '#fd7e14'
+        };
+
+        const branchClass = {
+            'Army': 'army',
+            'Navy': 'navy',
+            'Air Force': 'air-force',
+            'Marine Corps': 'marine-corps',
+            'Space Force': 'space-force',
+            'Joint': 'joint'
+        };
+
+        // Map state
+        let canvas, ctx;
+        let offsetX = 0, offsetY = 0;
+        let zoom = 1;
+        let isDragging = false;
+        let dragStartX, dragStartY;
+        let selectedBase = null;
+
+        // Map projection (simple Mercator-like)
+        const mapWidth = 2000;
+        const mapHeight = 1500;
+        const centerLat = 39.8283;
+        const centerLon = -98.5795;
+
+        function latLonToXY(lat, lon) {
+            const x = (lon + 180) * (mapWidth / 360);
+            const latRad = lat * Math.PI / 180;
+            const mercN = Math.log(Math.tan((Math.PI / 4) + (latRad / 2)));
+            const y = (mapHeight / 2) - (mapWidth * mercN / (2 * Math.PI));
+            return { x, y };
+        }
+
+        function initCanvas() {
+            canvas = document.getElementById('mapCanvas');
+            ctx = canvas.getContext('2d');
+
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+
+            // Mouse events
+            canvas.addEventListener('mousedown', onMouseDown);
+            canvas.addEventListener('mousemove', onMouseMove);
+            canvas.addEventListener('mouseup', onMouseUp);
+            canvas.addEventListener('wheel', onWheel);
+            canvas.addEventListener('click', onCanvasClick);
+
+            // Touch events
+            canvas.addEventListener('touchstart', onTouchStart);
+            canvas.addEventListener('touchmove', onTouchMove);
+            canvas.addEventListener('touchend', onTouchEnd);
+
+            draw();
+        }
+
+        function resizeCanvas() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+            draw();
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw background
+            ctx.fillStyle = '#e8f4f8';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw simplified US map outline
+            drawUSOutline();
+
+            // Draw state borders
+            drawStates();
+
+            // Draw bases
+            militaryBases.forEach(base => {
+                drawBase(base);
+            });
+
+            // Draw scale
+            drawScale();
+        }
+
+        function drawUSOutline() {
+            ctx.strokeStyle = '#95a5a6';
+            ctx.lineWidth = 2 / zoom;
+            ctx.setLineDash([]);
+
+            // Simple US border approximation
+            const usOutline = [
+                {lat: 49, lon: -125}, {lat: 49, lon: -95}, {lat: 49, lon: -90},
+                {lat: 45, lon: -85}, {lat: 45, lon: -80}, {lat: 47, lon: -70},
+                {lat: 45, lon: -67}, {lat: 30, lon: -80}, {lat: 25, lon: -80},
+                {lat: 25, lon: -81}, {lat: 28, lon: -97}, {lat: 32, lon: -117},
+                {lat: 42, lon: -124}, {lat: 49, lon: -125}
+            ];
+
+            ctx.beginPath();
+            usOutline.forEach((point, i) => {
+                const pos = latLonToXY(point.lat, point.lon);
+                const screenX = (pos.x + offsetX) * zoom + canvas.width / 2;
+                const screenY = (pos.y + offsetY) * zoom + canvas.height / 2;
+                if (i === 0) ctx.moveTo(screenX, screenY);
+                else ctx.lineTo(screenX, screenY);
+            });
+            ctx.stroke();
+        }
+
+        function drawStates() {
+            // Draw grid for reference
+            ctx.strokeStyle = '#d5e1e6';
+            ctx.lineWidth = 0.5 / zoom;
+            ctx.setLineDash([5, 5]);
+
+            for (let lat = 25; lat <= 50; lat += 5) {
+                for (let lon = -125; lon <= -65; lon += 10) {
+                    const pos1 = latLonToXY(lat, lon);
+                    const pos2 = latLonToXY(lat, lon + 10);
+                    const x1 = (pos1.x + offsetX) * zoom + canvas.width / 2;
+                    const y1 = (pos1.y + offsetY) * zoom + canvas.height / 2;
+                    const x2 = (pos2.x + offsetX) * zoom + canvas.width / 2;
+                    const y2 = (pos2.y + offsetY) * zoom + canvas.height / 2;
+
+                    ctx.beginPath();
+                    ctx.moveTo(x1, y1);
+                    ctx.lineTo(x2, y2);
+                    ctx.stroke();
+                }
+            }
+
+            for (let lon = -125; lon <= -65; lon += 10) {
+                for (let lat = 25; lat <= 50; lat += 5) {
+                    const pos1 = latLonToXY(lat, lon);
+                    const pos2 = latLonToXY(lat + 5, lon);
+                    const x1 = (pos1.x + offsetX) * zoom + canvas.width / 2;
+                    const y1 = (pos1.y + offsetY) * zoom + canvas.height / 2;
+                    const x2 = (pos2.x + offsetX) * zoom + canvas.width / 2;
+                    const y2 = (pos2.y + offsetY) * zoom + canvas.height / 2;
+
+                    ctx.beginPath();
+                    ctx.moveTo(x1, y1);
+                    ctx.lineTo(x2, y2);
+                    ctx.stroke();
+                }
+            }
+            ctx.setLineDash([]);
+        }
+
+        function drawBase(base) {
+            const pos = latLonToXY(base.lat, base.lon);
+            const x = (pos.x + offsetX) * zoom + canvas.width / 2;
+            const y = (pos.y + offsetY) * zoom + canvas.height / 2;
+
+            const color = branchColors[base.branch] || '#6c757d';
+
+            // Draw exclusion zone (10km ~ 0.1 degree)
+            ctx.beginPath();
+            ctx.arc(x, y, 50 * zoom, 0, 2 * Math.PI);
+            ctx.fillStyle = color + '1A';
+            ctx.fill();
+            ctx.strokeStyle = color + '4D';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            // Draw marker
+            ctx.beginPath();
+            ctx.arc(x, y, 6 * Math.max(1, zoom * 0.5), 0, 2 * Math.PI);
+            ctx.fillStyle = color;
+            ctx.fill();
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Draw label at higher zoom
+            if (zoom > 1.5) {
+                ctx.fillStyle = '#2c3e50';
+                ctx.font = `${10 * Math.max(1, zoom * 0.3)}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.fillText(base.name.split(' ')[0], x, y - 15 * zoom);
+            }
+
+            // Highlight selected
+            if (selectedBase && selectedBase.name === base.name) {
+                ctx.beginPath();
+                ctx.arc(x, y, 12 * Math.max(1, zoom * 0.5), 0, 2 * Math.PI);
+                ctx.strokeStyle = '#ffd700';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+            }
+        }
+
+        function drawScale() {
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+            ctx.fillRect(10, canvas.height - 60, 200, 50);
+            ctx.strokeStyle = '#333';
+            ctx.strokeRect(10, canvas.height - 60, 200, 50);
+
+            ctx.fillStyle = '#333';
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'left';
+            ctx.fillText(`Zoom: ${zoom.toFixed(1)}x`, 20, canvas.height - 35);
+            ctx.fillText(`Bases: ${militaryBases.length}`, 20, canvas.height - 18);
+        }
+
+        function onMouseDown(e) {
+            isDragging = true;
+            dragStartX = e.clientX;
+            dragStartY = e.clientY;
+        }
+
+        function onMouseMove(e) {
+            if (isDragging) {
+                const dx = (e.clientX - dragStartX) / zoom;
+                const dy = (e.clientY - dragStartY) / zoom;
+                offsetX += dx;
+                offsetY += dy;
+                dragStartX = e.clientX;
+                dragStartY = e.clientY;
+                draw();
+            }
+        }
+
+        function onMouseUp() {
+            isDragging = false;
+        }
+
+        function onWheel(e) {
+            e.preventDefault();
+            const delta = e.deltaY > 0 ? 0.9 : 1.1;
+            zoom = Math.max(0.5, Math.min(10, zoom * delta));
+            draw();
+        }
+
+        function onCanvasClick(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const clickY = e.clientY - rect.top;
+
+            // Check if clicked on a base
+            for (const base of militaryBases) {
+                const pos = latLonToXY(base.lat, base.lon);
+                const x = (pos.x + offsetX) * zoom + canvas.width / 2;
+                const y = (pos.y + offsetY) * zoom + canvas.height / 2;
+
+                const distance = Math.sqrt((clickX - x) ** 2 + (clickY - y) ** 2);
+                if (distance < 15 * zoom) {
+                    showBaseInfo(base);
+                    selectedBase = base;
+                    draw();
+                    return;
+                }
+            }
+        }
+
+        // Touch events
+        let touchStartDistance = 0;
+        function onTouchStart(e) {
+            if (e.touches.length === 1) {
+                isDragging = true;
+                dragStartX = e.touches[0].clientX;
+                dragStartY = e.touches[0].clientY;
+            } else if (e.touches.length === 2) {
+                const dx = e.touches[0].clientX - e.touches[1].clientX;
+                const dy = e.touches[0].clientY - e.touches[1].clientY;
+                touchStartDistance = Math.sqrt(dx * dx + dy * dy);
+            }
+        }
+
+        function onTouchMove(e) {
+            e.preventDefault();
+            if (e.touches.length === 1 && isDragging) {
+                const dx = (e.touches[0].clientX - dragStartX) / zoom;
+                const dy = (e.touches[0].clientY - dragStartY) / zoom;
+                offsetX += dx;
+                offsetY += dy;
+                dragStartX = e.touches[0].clientX;
+                dragStartY = e.touches[0].clientY;
+                draw();
+            } else if (e.touches.length === 2) {
+                const dx = e.touches[0].clientX - e.touches[1].clientX;
+                const dy = e.touches[0].clientY - e.touches[1].clientY;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                const delta = distance / touchStartDistance;
+                zoom = Math.max(0.5, Math.min(10, zoom * delta));
+                touchStartDistance = distance;
+                draw();
+            }
+        }
+
+        function onTouchEnd() {
+            isDragging = false;
+        }
+
+        function zoomIn() {
+            zoom = Math.min(10, zoom * 1.3);
+            draw();
+        }
+
+        function zoomOut() {
+            zoom = Math.max(0.5, zoom / 1.3);
+            draw();
+        }
+
+        function resetView() {
+            offsetX = 0;
+            offsetY = 0;
+            zoom = 1;
+            selectedBase = null;
+            draw();
+        }
+
+        function showBaseInfo(base) {
+            const selectedInfo = document.getElementById('selectedInfo');
+            selectedInfo.innerHTML = `
+                <div class="info-box">
+                    <h3>${base.name}</h3>
+                    <p><strong>Branch:</strong> ${base.branch}</p>
+                    <p><strong>State:</strong> ${base.state}</p>
+                    <p><strong>Description:</strong> ${base.description}</p>
+                    <p><strong>Coordinates:</strong> ${base.lat.toFixed(4)}, ${base.lon.toFixed(4)}</p>
+                </div>
+            `;
+
+            // Center on base
+            const pos = latLonToXY(base.lat, base.lon);
+            offsetX = -pos.x;
+            offsetY = -pos.y;
+            zoom = Math.max(2, zoom);
+            draw();
+        }
+
+        function populateBaseList(bases) {
+            const baseList = document.getElementById('baseList');
+            baseList.innerHTML = '';
+
+            bases.forEach(base => {
+                const div = document.createElement('div');
+                div.className = `base-item ${branchClass[base.branch]}`;
+                div.innerHTML = `
+                    <div class="base-name">${base.name}</div>
+                    <div class="base-branch">${base.branch} - ${base.state}</div>
+                `;
+                div.onclick = () => showBaseInfo(base);
+                baseList.appendChild(div);
+            });
+
+            document.getElementById('baseCount').textContent = bases.length;
+        }
+
+        // Search functionality
+        document.getElementById('searchBox').addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            const filtered = militaryBases.filter(base =>
+                base.name.toLowerCase().includes(searchTerm) ||
+                base.state.toLowerCase().includes(searchTerm) ||
+                base.branch.toLowerCase().includes(searchTerm)
+            );
+            populateBaseList(filtered);
+        });
+
+        // Initialize
+        window.addEventListener('load', () => {
+            initCanvas();
+            populateBaseList(militaryBases);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>US Military Bases Map - Offline Version</title>
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+          crossorigin=""/>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            z-index: 1000;
+        }
+
+        header h1 {
+            color: #2c3e50;
+            font-size: 1.5rem;
+            margin-bottom: 5px;
+        }
+
+        header p {
+            color: #7f8c8d;
+            font-size: 0.85rem;
+        }
+
+        .offline-badge {
+            display: inline-block;
+            background: #28a745;
+            color: white;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            margin-left: 10px;
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            padding: 15px;
+            gap: 15px;
+            overflow: hidden;
+        }
+
+        .sidebar {
+            width: 320px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 10px;
+            padding: 15px;
+            overflow-y: auto;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .panel {
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e1e8ed;
+        }
+
+        .panel:last-child {
+            border-bottom: none;
+        }
+
+        .panel h2 {
+            font-size: 1.1rem;
+            color: #2c3e50;
+            margin-bottom: 12px;
+        }
+
+        .base-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .base-item {
+            padding: 10px;
+            margin-bottom: 8px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-left: 4px solid;
+        }
+
+        .base-item:hover {
+            background: #e9ecef;
+            transform: translateX(5px);
+        }
+
+        .base-item.army { border-left-color: #28a745; }
+        .base-item.navy { border-left-color: #007bff; }
+        .base-item.air-force { border-left-color: #17a2b8; }
+        .base-item.marine-corps { border-left-color: #dc3545; }
+        .base-item.space-force { border-left-color: #6f42c1; }
+        .base-item.joint { border-left-color: #fd7e14; }
+
+        .base-name {
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 0.9rem;
+        }
+
+        .base-branch {
+            font-size: 0.8rem;
+            color: #6c757d;
+            margin-top: 3px;
+        }
+
+        .legend {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 8px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 6px;
+            font-size: 0.85rem;
+        }
+
+        .marker-icon {
+            font-size: 1.2rem;
+            margin-right: 8px;
+            width: 18px;
+        }
+
+        .stats {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stats-number {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stats-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .map-container {
+            flex: 1;
+            position: relative;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+        }
+
+        .info-box {
+            background: white;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+
+        .info-box h3 {
+            color: #2c3e50;
+            font-size: 1rem;
+            margin-bottom: 8px;
+        }
+
+        .info-box p {
+            font-size: 0.85rem;
+            color: #495057;
+            margin-bottom: 5px;
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e1e8ed;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+        }
+
+        .search-box:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        footer {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 10px 20px;
+            text-align: center;
+            font-size: 0.75rem;
+            color: #7f8c8d;
+        }
+
+        @media (max-width: 968px) {
+            .main-content {
+                flex-direction: column;
+            }
+            .sidebar {
+                width: 100%;
+                max-height: 300px;
+            }
+        }
+
+        .popup-content h3 {
+            color: #2c3e50;
+            margin-bottom: 8px;
+            font-size: 1rem;
+        }
+
+        .popup-content p {
+            margin-bottom: 5px;
+            font-size: 0.85rem;
+        }
+
+        .popup-content strong {
+            color: #495057;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🗺️ US Military Bases Map <span class="offline-badge">OFFLINE READY</span></h1>
+            <p>Interactive map showing public information about US military installations</p>
+        </header>
+
+        <div class="main-content">
+            <div class="sidebar">
+                <div class="stats">
+                    <div class="stats-number" id="baseCount">25</div>
+                    <div class="stats-label">Military Installations</div>
+                </div>
+
+                <div class="panel">
+                    <h2>🔍 Search Bases</h2>
+                    <input type="text" class="search-box" id="searchBox" placeholder="Search by name, state, or branch...">
+                </div>
+
+                <div class="panel">
+                    <h2>📍 Military Bases</h2>
+                    <div class="base-list" id="baseList"></div>
+                </div>
+
+                <div class="panel legend">
+                    <h2>🏷️ Legend</h2>
+                    <div class="legend-item">
+                        <span class="marker-icon" style="color: #28a745;">●</span> Army
+                    </div>
+                    <div class="legend-item">
+                        <span class="marker-icon" style="color: #007bff;">●</span> Navy
+                    </div>
+                    <div class="legend-item">
+                        <span class="marker-icon" style="color: #17a2b8;">●</span> Air Force
+                    </div>
+                    <div class="legend-item">
+                        <span class="marker-icon" style="color: #dc3545;">●</span> Marine Corps
+                    </div>
+                    <div class="legend-item">
+                        <span class="marker-icon" style="color: #6f42c1;">●</span> Space Force
+                    </div>
+                    <div class="legend-item">
+                        <span class="marker-icon" style="color: #fd7e14;">●</span> Joint
+                    </div>
+                </div>
+
+                <div id="selectedInfo"></div>
+            </div>
+
+            <div class="map-container">
+                <div id="map"></div>
+            </div>
+        </div>
+
+        <footer>
+            <p>All data shown is publicly available information. This version works offline once loaded. To save: Right-click → Save As → Complete Webpage</p>
+        </footer>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+            crossorigin=""></script>
+
+    <script>
+        // Embedded Military Bases Data
+        const militaryBases = [
+            {"name": "Fort Liberty (formerly Fort Bragg)", "branch": "Army", "lat": 35.1390, "lon": -79.0060, "state": "North Carolina", "description": "Home to the U.S. Army Special Operations Command and the 82nd Airborne Division"},
+            {"name": "Naval Station Norfolk", "branch": "Navy", "lat": 36.9466, "lon": -76.3297, "state": "Virginia", "description": "The world's largest naval station, supporting 75 ships and 134 aircraft"},
+            {"name": "Joint Base Lewis-McChord", "branch": "Joint", "lat": 47.1073, "lon": -122.5810, "state": "Washington", "description": "Major joint Army-Air Force base in the Pacific Northwest"},
+            {"name": "Fort Campbell", "branch": "Army", "lat": 36.6658, "lon": -87.4886, "state": "Kentucky/Tennessee", "description": "Home of the 101st Airborne Division (Air Assault)"},
+            {"name": "Eglin Air Force Base", "branch": "Air Force", "lat": 30.4833, "lon": -86.5250, "state": "Florida", "description": "Major Air Force testing and training range"},
+            {"name": "Marine Corps Base Camp Pendleton", "branch": "Marine Corps", "lat": 33.3023, "lon": -117.3150, "state": "California", "description": "Major West Coast Marine Corps training base"},
+            {"name": "Fort Hood (Fort Cavazos)", "branch": "Army", "lat": 31.1350, "lon": -97.7759, "state": "Texas", "description": "One of the largest active duty armored post in the U.S."},
+            {"name": "Nellis Air Force Base", "branch": "Air Force", "lat": 36.2361, "lon": -115.0344, "state": "Nevada", "description": "Home to air combat training and the Thunderbirds"},
+            {"name": "Naval Air Station Pensacola", "branch": "Navy", "lat": 30.3500, "lon": -87.3086, "state": "Florida", "description": "Primary naval aviation training base, home of Blue Angels"},
+            {"name": "Wright-Patterson Air Force Base", "branch": "Air Force", "lat": 39.8138, "lon": -84.0529, "state": "Ohio", "description": "Major Air Force research and development center"},
+            {"name": "Fort Benning (Fort Moore)", "branch": "Army", "lat": 32.3520, "lon": -84.9464, "state": "Georgia", "description": "U.S. Army Maneuver Center of Excellence and Infantry School"},
+            {"name": "Naval Base San Diego", "branch": "Navy", "lat": 32.6781, "lon": -117.1383, "state": "California", "description": "Principal homeport of the Pacific Fleet"},
+            {"name": "Scott Air Force Base", "branch": "Air Force", "lat": 38.5442, "lon": -89.8519, "state": "Illinois", "description": "Home of Air Mobility Command headquarters"},
+            {"name": "Naval Base Kitsap", "branch": "Navy", "lat": 47.5606, "lon": -122.6528, "state": "Washington", "description": "Strategic submarine base and naval shipyard"},
+            {"name": "Offutt Air Force Base", "branch": "Air Force", "lat": 41.1183, "lon": -95.9147, "state": "Nebraska", "description": "Home of U.S. Strategic Command"},
+            {"name": "Fort Carson", "branch": "Army", "lat": 38.7392, "lon": -104.7850, "state": "Colorado", "description": "Major Army installation supporting the 4th Infantry Division"},
+            {"name": "Naval Station Great Lakes", "branch": "Navy", "lat": 42.3117, "lon": -87.8464, "state": "Illinois", "description": "U.S. Navy's largest training installation"},
+            {"name": "Marine Corps Air Station Miramar", "branch": "Marine Corps", "lat": 32.8683, "lon": -117.1428, "state": "California", "description": "Former home of Top Gun, major Marine Corps air station"},
+            {"name": "Joint Base Andrews", "branch": "Joint", "lat": 38.8108, "lon": -76.8670, "state": "Maryland", "description": "Home of Air Force One"},
+            {"name": "Fort Bliss", "branch": "Army", "lat": 31.8093, "lon": -106.4005, "state": "Texas", "description": "Major Army air defense training center"},
+            {"name": "Naval Air Station Jacksonville", "branch": "Navy", "lat": 30.2358, "lon": -81.6805, "state": "Florida", "description": "Major naval aviation installation on the East Coast"},
+            {"name": "Peterson Space Force Base", "branch": "Space Force", "lat": 38.8125, "lon": -104.7008, "state": "Colorado", "description": "Home of U.S. Space Command and NORAD"},
+            {"name": "Lackland Air Force Base", "branch": "Air Force", "lat": 29.3847, "lon": -98.5811, "state": "Texas", "description": "Primary Air Force basic training center"},
+            {"name": "Naval Submarine Base New London", "branch": "Navy", "lat": 41.3870, "lon": -72.0830, "state": "Connecticut", "description": "Primary East Coast submarine base"},
+            {"name": "Barksdale Air Force Base", "branch": "Air Force", "lat": 32.5019, "lon": -93.6628, "state": "Louisiana", "description": "Major bomber base, home to B-52 squadrons"}
+        ];
+
+        // Color mapping for branches
+        const branchColors = {
+            'Army': '#28a745',
+            'Navy': '#007bff',
+            'Air Force': '#17a2b8',
+            'Marine Corps': '#dc3545',
+            'Space Force': '#6f42c1',
+            'Joint': '#fd7e14'
+        };
+
+        const branchClass = {
+            'Army': 'army',
+            'Navy': 'navy',
+            'Air Force': 'air-force',
+            'Marine Corps': 'marine-corps',
+            'Space Force': 'space-force',
+            'Joint': 'joint'
+        };
+
+        let map;
+        let markers = [];
+        let circles = [];
+
+        // Initialize map
+        function initMap() {
+            map = L.map('map').setView([39.8283, -98.5795], 5);
+
+            // Add tile layer (requires internet, but shows nice map when online)
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors',
+                maxZoom: 19
+            }).addTo(map);
+
+            // Add bases to map
+            addBasesToMap();
+
+            // Populate base list
+            populateBaseList(militaryBases);
+        }
+
+        function addBasesToMap() {
+            militaryBases.forEach((base, index) => {
+                const color = branchColors[base.branch] || '#6c757d';
+
+                // Create marker
+                const marker = L.circleMarker([base.lat, base.lon], {
+                    radius: 8,
+                    fillColor: color,
+                    color: '#fff',
+                    weight: 2,
+                    opacity: 1,
+                    fillOpacity: 0.8
+                }).addTo(map);
+
+                // Create popup
+                const popupContent = `
+                    <div class="popup-content">
+                        <h3>${base.name}</h3>
+                        <p><strong>Branch:</strong> ${base.branch}</p>
+                        <p><strong>State:</strong> ${base.state}</p>
+                        <p><strong>Description:</strong> ${base.description}</p>
+                        <p><strong>Coordinates:</strong> ${base.lat.toFixed(4)}, ${base.lon.toFixed(4)}</p>
+                    </div>
+                `;
+                marker.bindPopup(popupContent);
+
+                // Add exclusion zone circle
+                const circle = L.circle([base.lat, base.lon], {
+                    radius: 10000, // 10km
+                    color: color,
+                    fillColor: color,
+                    fillOpacity: 0.1,
+                    opacity: 0.3,
+                    weight: 1
+                }).addTo(map);
+
+                markers.push({marker, circle, base});
+            });
+        }
+
+        function populateBaseList(bases) {
+            const baseList = document.getElementById('baseList');
+            baseList.innerHTML = '';
+
+            bases.forEach(base => {
+                const div = document.createElement('div');
+                div.className = `base-item ${branchClass[base.branch]}`;
+                div.innerHTML = `
+                    <div class="base-name">${base.name}</div>
+                    <div class="base-branch">${base.branch} - ${base.state}</div>
+                `;
+                div.onclick = () => zoomToBase(base);
+                baseList.appendChild(div);
+            });
+
+            document.getElementById('baseCount').textContent = bases.length;
+        }
+
+        function zoomToBase(base) {
+            map.setView([base.lat, base.lon], 10);
+
+            // Find and open popup
+            const markerObj = markers.find(m => m.base.name === base.name);
+            if (markerObj) {
+                markerObj.marker.openPopup();
+            }
+
+            // Show info in sidebar
+            const selectedInfo = document.getElementById('selectedInfo');
+            selectedInfo.innerHTML = `
+                <div class="info-box">
+                    <h3>${base.name}</h3>
+                    <p><strong>Branch:</strong> ${base.branch}</p>
+                    <p><strong>State:</strong> ${base.state}</p>
+                    <p><strong>Description:</strong> ${base.description}</p>
+                    <p><strong>Coordinates:</strong> ${base.lat.toFixed(4)}, ${base.lon.toFixed(4)}</p>
+                </div>
+            `;
+        }
+
+        // Search functionality
+        document.getElementById('searchBox').addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            const filtered = militaryBases.filter(base =>
+                base.name.toLowerCase().includes(searchTerm) ||
+                base.state.toLowerCase().includes(searchTerm) ||
+                base.branch.toLowerCase().includes(searchTerm)
+            );
+            populateBaseList(filtered);
+        });
+
+        // Initialize when page loads
+        window.addEventListener('load', initMap);
+    </script>
+</body>
+</html>
