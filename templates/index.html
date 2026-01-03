@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>US Military Bases Map & Navigation</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🗺️ US Military Bases Map & Navigation System</h1>
+            <p>Interactive map showing public information about US military installations with navigation avoiding exclusion zones</p>
+        </header>
+
+        <div class="main-content">
+            <!-- Sidebar -->
+            <div class="sidebar">
+                <div class="panel">
+                    <h2>📍 Base Information</h2>
+                    <div id="baseInfo">
+                        <p>Click on a base marker to view details</p>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <h2>🧭 Navigation Planner</h2>
+                    <p class="help-text">Plan routes that avoid military exclusion zones (10km radius)</p>
+
+                    <div class="form-group">
+                        <label>Start Point</label>
+                        <input type="number" id="startLat" placeholder="Latitude" step="0.0001">
+                        <input type="number" id="startLon" placeholder="Longitude" step="0.0001">
+                        <button onclick="setStartFromClick()" class="btn-secondary">Click Map to Set</button>
+                    </div>
+
+                    <div class="form-group">
+                        <label>End Point</label>
+                        <input type="number" id="endLat" placeholder="Latitude" step="0.0001">
+                        <input type="number" id="endLon" placeholder="Longitude" step="0.0001">
+                        <button onclick="setEndFromClick()" class="btn-secondary">Click Map to Set</button>
+                    </div>
+
+                    <button onclick="calculateRoute()" class="btn-primary">Calculate Safe Route</button>
+                    <button onclick="clearRoute()" class="btn-secondary">Clear Route</button>
+
+                    <div id="routeInfo"></div>
+                </div>
+
+                <div class="panel">
+                    <h2>🎯 Point Checker</h2>
+                    <p class="help-text">Check if coordinates are in an exclusion zone</p>
+
+                    <div class="form-group">
+                        <input type="number" id="checkLat" placeholder="Latitude" step="0.0001">
+                        <input type="number" id="checkLon" placeholder="Longitude" step="0.0001">
+                        <button onclick="checkPoint()" class="btn-primary">Check Point</button>
+                    </div>
+
+                    <div id="checkInfo"></div>
+                </div>
+
+                <div class="panel legend">
+                    <h2>🏷️ Legend</h2>
+                    <div class="legend-item">
+                        <span class="marker-icon" style="background-color: #28a745;">●</span> Army
+                    </div>
+                    <div class="legend-item">
+                        <span class="marker-icon" style="background-color: #007bff;">●</span> Navy
+                    </div>
+                    <div class="legend-item">
+                        <span class="marker-icon" style="background-color: #17a2b8;">●</span> Air Force
+                    </div>
+                    <div class="legend-item">
+                        <span class="marker-icon" style="background-color: #dc3545;">●</span> Marine Corps
+                    </div>
+                    <div class="legend-item">
+                        <span class="marker-icon" style="background-color: #6f42c1;">●</span> Space Force
+                    </div>
+                    <div class="legend-item">
+                        <span class="marker-icon" style="background-color: #fd7e14;">●</span> Joint
+                    </div>
+                    <div class="legend-item">
+                        <span style="opacity: 0.3;">○</span> Exclusion Zone (10km)
+                    </div>
+                </div>
+            </div>
+
+            <!-- Map Container -->
+            <div class="map-container">
+                <div id="map"></div>
+                <div id="loading">Loading map...</div>
+            </div>
+        </div>
+
+        <footer>
+            <p>Data shown is publicly available information about US military installations. Exclusion zones are illustrative for navigation planning purposes.</p>
+        </footer>
+    </div>
+
+    <script>
+        let map;
+        let bases = [];
+        let routeLayer = null;
+        let startMarker = null;
+        let endMarker = null;
+        let clickMode = null; // 'start' or 'end' or null
+
+        // Initialize map
+        async function initMap() {
+            // Create map centered on continental US
+            map = L.map('map').setView([39.8283, -98.5795], 5);
+
+            // Add tile layer
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors',
+                maxZoom: 19
+            }).addTo(map);
+
+            // Load and display bases
+            await loadBases();
+
+            // Map click handler
+            map.on('click', onMapClick);
+
+            document.getElementById('loading').style.display = 'none';
+        }
+
+        async function loadBases() {
+            try {
+                const response = await fetch('/api/bases');
+                bases = await response.json();
+
+                // Color mapping
+                const branchColors = {
+                    'Army': '#28a745',
+                    'Navy': '#007bff',
+                    'Air Force': '#17a2b8',
+                    'Marine Corps': '#dc3545',
+                    'Space Force': '#6f42c1',
+                    'Joint': '#fd7e14'
+                };
+
+                // Add markers and circles for each base
+                bases.forEach(base => {
+                    const color = branchColors[base.branch] || '#6c757d';
+
+                    // Add marker
+                    const marker = L.circleMarker([base.lat, base.lon], {
+                        radius: 8,
+                        fillColor: color,
+                        color: '#fff',
+                        weight: 2,
+                        opacity: 1,
+                        fillOpacity: 0.8
+                    }).addTo(map);
+
+                    // Add popup
+                    marker.bindPopup(`
+                        <div class="popup-content">
+                            <h3>${base.name}</h3>
+                            <p><strong>Branch:</strong> ${base.branch}</p>
+                            <p><strong>State:</strong> ${base.state}</p>
+                            <p><strong>Description:</strong> ${base.description}</p>
+                            <p><strong>Coordinates:</strong> ${base.lat.toFixed(4)}, ${base.lon.toFixed(4)}</p>
+                        </div>
+                    `);
+
+                    // Add exclusion zone circle
+                    L.circle([base.lat, base.lon], {
+                        radius: 10000, // 10km in meters
+                        color: color,
+                        fillColor: color,
+                        fillOpacity: 0.1,
+                        opacity: 0.3,
+                        weight: 1
+                    }).addTo(map);
+                });
+
+            } catch (error) {
+                console.error('Error loading bases:', error);
+                alert('Error loading military bases data');
+            }
+        }
+
+        function setStartFromClick() {
+            clickMode = 'start';
+            document.body.style.cursor = 'crosshair';
+            showMessage('routeInfo', 'Click on the map to set start point...', 'info');
+        }
+
+        function setEndFromClick() {
+            clickMode = 'end';
+            document.body.style.cursor = 'crosshair';
+            showMessage('routeInfo', 'Click on the map to set end point...', 'info');
+        }
+
+        function onMapClick(e) {
+            if (clickMode === 'start') {
+                document.getElementById('startLat').value = e.latlng.lat.toFixed(4);
+                document.getElementById('startLon').value = e.latlng.lng.toFixed(4);
+
+                if (startMarker) map.removeLayer(startMarker);
+                startMarker = L.marker([e.latlng.lat, e.latlng.lng], {
+                    icon: L.divIcon({
+                        className: 'start-marker',
+                        html: '<div style="background-color: #28a745; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white;"></div>',
+                        iconSize: [20, 20]
+                    })
+                }).addTo(map);
+
+                clickMode = null;
+                document.body.style.cursor = 'default';
+                showMessage('routeInfo', 'Start point set!', 'success');
+            } else if (clickMode === 'end') {
+                document.getElementById('endLat').value = e.latlng.lat.toFixed(4);
+                document.getElementById('endLon').value = e.latlng.lng.toFixed(4);
+
+                if (endMarker) map.removeLayer(endMarker);
+                endMarker = L.marker([e.latlng.lat, e.latlng.lng], {
+                    icon: L.divIcon({
+                        className: 'end-marker',
+                        html: '<div style="background-color: #dc3545; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white;"></div>',
+                        iconSize: [20, 20]
+                    })
+                }).addTo(map);
+
+                clickMode = null;
+                document.body.style.cursor = 'default';
+                showMessage('routeInfo', 'End point set!', 'success');
+            }
+        }
+
+        async function calculateRoute() {
+            const startLat = parseFloat(document.getElementById('startLat').value);
+            const startLon = parseFloat(document.getElementById('startLon').value);
+            const endLat = parseFloat(document.getElementById('endLat').value);
+            const endLon = parseFloat(document.getElementById('endLon').value);
+
+            if (isNaN(startLat) || isNaN(startLon) || isNaN(endLat) || isNaN(endLon)) {
+                showMessage('routeInfo', 'Please enter valid coordinates for both start and end points', 'error');
+                return;
+            }
+
+            try {
+                showMessage('routeInfo', 'Calculating route...', 'info');
+
+                const response = await fetch('/api/route', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        start_lat: startLat,
+                        start_lon: startLon,
+                        end_lat: endLat,
+                        end_lon: endLon
+                    })
+                });
+
+                const data = await response.json();
+
+                // Remove old route
+                if (routeLayer) map.removeLayer(routeLayer);
+
+                // Draw new route
+                routeLayer = L.polyline(data.waypoints, {
+                    color: '#007bff',
+                    weight: 4,
+                    opacity: 0.7
+                }).addTo(map);
+
+                // Fit map to route
+                map.fitBounds(routeLayer.getBounds(), { padding: [50, 50] });
+
+                // Show route information
+                let infoHTML = `
+                    <div class="route-result">
+                        <p><strong>Total Distance:</strong> ${data.total_distance_km} km</p>
+                        <p><strong>Waypoints:</strong> ${data.waypoints.length}</p>
+                        <p><strong>Exclusion Radius:</strong> ${data.exclusion_radius_km} km</p>
+                `;
+
+                if (data.warnings.length > 0) {
+                    infoHTML += '<div class="warnings">';
+                    data.warnings.forEach(warning => {
+                        infoHTML += `<p class="warning">⚠️ ${warning}</p>`;
+                    });
+                    infoHTML += '</div>';
+                }
+
+                infoHTML += '</div>';
+                document.getElementById('routeInfo').innerHTML = infoHTML;
+
+            } catch (error) {
+                console.error('Error calculating route:', error);
+                showMessage('routeInfo', 'Error calculating route', 'error');
+            }
+        }
+
+        function clearRoute() {
+            if (routeLayer) {
+                map.removeLayer(routeLayer);
+                routeLayer = null;
+            }
+            if (startMarker) {
+                map.removeLayer(startMarker);
+                startMarker = null;
+            }
+            if (endMarker) {
+                map.removeLayer(endMarker);
+                endMarker = null;
+            }
+
+            document.getElementById('startLat').value = '';
+            document.getElementById('startLon').value = '';
+            document.getElementById('endLat').value = '';
+            document.getElementById('endLon').value = '';
+            document.getElementById('routeInfo').innerHTML = '';
+
+            clickMode = null;
+            document.body.style.cursor = 'default';
+        }
+
+        async function checkPoint() {
+            const lat = parseFloat(document.getElementById('checkLat').value);
+            const lon = parseFloat(document.getElementById('checkLon').value);
+
+            if (isNaN(lat) || isNaN(lon)) {
+                showMessage('checkInfo', 'Please enter valid coordinates', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/check_point', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ lat, lon })
+                });
+
+                const data = await response.json();
+
+                let resultHTML = '<div class="check-result">';
+                if (data.in_exclusion_zone) {
+                    resultHTML += `
+                        <p class="warning">⚠️ <strong>Warning!</strong></p>
+                        <p>This point is within the exclusion zone of:</p>
+                        <p><strong>${data.base_name}</strong></p>
+                        <p>Exclusion radius: ${data.exclusion_radius_km} km</p>
+                    `;
+                } else {
+                    resultHTML += `
+                        <p class="success">✓ <strong>Safe Zone</strong></p>
+                        <p>This point is not within any exclusion zone.</p>
+                    `;
+                }
+                resultHTML += '</div>';
+
+                document.getElementById('checkInfo').innerHTML = resultHTML;
+
+                // Add temporary marker
+                const marker = L.circleMarker([lat, lon], {
+                    radius: 6,
+                    fillColor: data.in_exclusion_zone ? '#dc3545' : '#28a745',
+                    color: '#fff',
+                    weight: 2,
+                    opacity: 1,
+                    fillOpacity: 0.8
+                }).addTo(map);
+
+                map.setView([lat, lon], 8);
+
+                setTimeout(() => map.removeLayer(marker), 5000);
+
+            } catch (error) {
+                console.error('Error checking point:', error);
+                showMessage('checkInfo', 'Error checking point', 'error');
+            }
+        }
+
+        function showMessage(elementId, message, type) {
+            const element = document.getElementById(elementId);
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : 'info';
+            element.innerHTML = `<p class="${className}">${message}</p>`;
+        }
+
+        // Initialize map when page loads
+        window.addEventListener('load', initMap);
+    </script>
+</body>
+</html>

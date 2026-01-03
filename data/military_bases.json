@@ -1,0 +1,202 @@
+[
+  {
+    "name": "Fort Liberty (formerly Fort Bragg)",
+    "branch": "Army",
+    "lat": 35.1390,
+    "lon": -79.0060,
+    "state": "North Carolina",
+    "description": "Home to the U.S. Army Special Operations Command and the 82nd Airborne Division"
+  },
+  {
+    "name": "Naval Station Norfolk",
+    "branch": "Navy",
+    "lat": 36.9466,
+    "lon": -76.3297,
+    "state": "Virginia",
+    "description": "The world's largest naval station, supporting 75 ships and 134 aircraft"
+  },
+  {
+    "name": "Joint Base Lewis-McChord",
+    "branch": "Joint",
+    "lat": 47.1073,
+    "lon": -122.5810,
+    "state": "Washington",
+    "description": "Major joint Army-Air Force base in the Pacific Northwest"
+  },
+  {
+    "name": "Fort Campbell",
+    "branch": "Army",
+    "lat": 36.6658,
+    "lon": -87.4886,
+    "state": "Kentucky/Tennessee",
+    "description": "Home of the 101st Airborne Division (Air Assault)"
+  },
+  {
+    "name": "Eglin Air Force Base",
+    "branch": "Air Force",
+    "lat": 30.4833,
+    "lon": -86.5250,
+    "state": "Florida",
+    "description": "Major Air Force testing and training range"
+  },
+  {
+    "name": "Marine Corps Base Camp Pendleton",
+    "branch": "Marine Corps",
+    "lat": 33.3023,
+    "lon": -117.3150,
+    "state": "California",
+    "description": "Major West Coast Marine Corps training base"
+  },
+  {
+    "name": "Fort Hood (Fort Cavazos)",
+    "branch": "Army",
+    "lat": 31.1350,
+    "lon": -97.7759,
+    "state": "Texas",
+    "description": "One of the largest active duty armored post in the U.S."
+  },
+  {
+    "name": "Nellis Air Force Base",
+    "branch": "Air Force",
+    "lat": 36.2361,
+    "lon": -115.0344,
+    "state": "Nevada",
+    "description": "Home to air combat training and the Thunderbirds"
+  },
+  {
+    "name": "Naval Air Station Pensacola",
+    "branch": "Navy",
+    "lat": 30.3500,
+    "lon": -87.3086,
+    "state": "Florida",
+    "description": "Primary naval aviation training base, home of Blue Angels"
+  },
+  {
+    "name": "Wright-Patterson Air Force Base",
+    "branch": "Air Force",
+    "lat": 39.8138,
+    "lon": -84.0529,
+    "state": "Ohio",
+    "description": "Major Air Force research and development center"
+  },
+  {
+    "name": "Fort Benning (Fort Moore)",
+    "branch": "Army",
+    "lat": 32.3520,
+    "lon": -84.9464,
+    "state": "Georgia",
+    "description": "U.S. Army Maneuver Center of Excellence and Infantry School"
+  },
+  {
+    "name": "Naval Base San Diego",
+    "branch": "Navy",
+    "lat": 32.6781,
+    "lon": -117.1383,
+    "state": "California",
+    "description": "Principal homeport of the Pacific Fleet"
+  },
+  {
+    "name": "Scott Air Force Base",
+    "branch": "Air Force",
+    "lat": 38.5442,
+    "lon": -89.8519,
+    "state": "Illinois",
+    "description": "Home of Air Mobility Command headquarters"
+  },
+  {
+    "name": "Naval Base Kitsap",
+    "branch": "Navy",
+    "lat": 47.5606,
+    "lon": -122.6528,
+    "state": "Washington",
+    "description": "Strategic submarine base and naval shipyard"
+  },
+  {
+    "name": "Offutt Air Force Base",
+    "branch": "Air Force",
+    "lat": 41.1183,
+    "lon": -95.9147,
+    "state": "Nebraska",
+    "description": "Home of U.S. Strategic Command"
+  },
+  {
+    "name": "Fort Carson",
+    "branch": "Army",
+    "lat": 38.7392,
+    "lon": -104.7850,
+    "state": "Colorado",
+    "description": "Major Army installation supporting the 4th Infantry Division"
+  },
+  {
+    "name": "Naval Station Great Lakes",
+    "branch": "Navy",
+    "lat": 42.3117,
+    "lon": -87.8464,
+    "state": "Illinois",
+    "description": "U.S. Navy's largest training installation"
+  },
+  {
+    "name": "Marine Corps Air Station Miramar",
+    "branch": "Marine Corps",
+    "lat": 32.8683,
+    "lon": -117.1428,
+    "state": "California",
+    "description": "Former home of Top Gun, major Marine Corps air station"
+  },
+  {
+    "name": "Joint Base Andrews",
+    "branch": "Joint",
+    "lat": 38.8108,
+    "lon": -76.8670,
+    "state": "Maryland",
+    "description": "Home of Air Force One"
+  },
+  {
+    "name": "Fort Bliss",
+    "branch": "Army",
+    "lat": 31.8093,
+    "lon": -106.4005,
+    "state": "Texas",
+    "description": "Major Army air defense training center"
+  },
+  {
+    "name": "Naval Air Station Jacksonville",
+    "branch": "Navy",
+    "lat": 30.2358,
+    "lon": -81.6805,
+    "state": "Florida",
+    "description": "Major naval aviation installation on the East Coast"
+  },
+  {
+    "name": "Peterson Space Force Base",
+    "branch": "Space Force",
+    "lat": 38.8125,
+    "lon": -104.7008,
+    "state": "Colorado",
+    "description": "Home of U.S. Space Command and NORAD"
+  },
+  {
+    "name": "Lackland Air Force Base",
+    "branch": "Air Force",
+    "lat": 29.3847,
+    "lon": -98.5811,
+    "state": "Texas",
+    "description": "Primary Air Force basic training center"
+  },
+  {
+    "name": "Naval Submarine Base New London",
+    "branch": "Navy",
+    "lat": 41.3870,
+    "lon": -72.0830,
+    "state": "Connecticut",
+    "description": "Primary East Coast submarine base"
+  },
+  {
+    "name": "Barksdale Air Force Base",
+    "branch": "Air Force",
+    "lat": 32.5019,
+    "lon": -93.6628,
+    "state": "Louisiana",
+    "description": "Major bomber base, home to B-52 squadrons"
+  }
+]
